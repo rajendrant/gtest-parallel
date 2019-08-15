@@ -1,0 +1,21 @@
+{
+  "name": "gtest-parallel",
+  "version": "0.0.1",
+  "description": "Script to execute Google Test binaries in parallel",
+  "main": "runner.js",
+  "bin": {
+    "gtest-parallel": "cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Raj T",
+  "license": "ISC",
+  "keywords": [
+    "google test",
+    "parallel"
+  ],
+  "dependencies": {
+    "commander": "^3.0.0"
+  }
+}
