@@ -22,23 +22,23 @@ parse_command_line = () => {
   return res
 }
 
-var failed = []
-var passed = []
-
 cli = parse_command_line()
-runner.runGtests(cli.binary, cli.gtest_filter, cli.additional_args, (test) => {
-  assert.ok(test.is_complete)
-  if (test.error) {
-    console.log(`FAIL ${test.tests}`)
-    console.log(`Error ${test.error}`)
-    console.log(test.stdout)
-    console.log(test.stderr)
-    failed.push(test.tests)
-  } else {
-    passed.push(test.tests)
-    console.log(`Passed ${test.tests}`)
+gtest = runner.runGtests(cli.binary, cli.gtest_filter, cli.additional_args, process.cwd())
+gtest.on('testlist', testlist => {
+  console.log('testlist', testlist)
+})
+gtest.on('result', result => {
+  assert.ok(result.is_complete)
+  if (result.error) {
+    console.log(`FAIL ${result.tests}`)
+    console.log(`Error ${result.error}`)
+    console.log(result.stdout)
+    console.log(result.stderr)
   }
-  console.log(`Failed tests ${failed.length}`)
-  console.log(failed)
-  console.log(`${passed.length} tests passed`)
+})
+gtest.on('finish', (passed, failed) => {
+  if (failed.length)
+    console.log(`Failed tests ${failed.length}`)
+  if (passed)
+    console.log(`${passed.length} tests passed`)
 })

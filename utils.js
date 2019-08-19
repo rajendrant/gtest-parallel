@@ -4,22 +4,33 @@ const path = require('path')
 const child_process = require('child_process')
 const ParallelTaskRunner = require('./ParallelTaskRunner')
 
+getSetDifference = (old, neww) => {
+  const old_set = new Set(old)
+  const new_set = new Set(neww)
+  const added = neww.filter(x => !old_set.has(x))
+  const removed = old.filter(x => !new_set.has(x))
+  return [added, removed]
+}
+
 class TestTask {
-  constructor(binary, tests, argument, callback) {
+  constructor(binary, tests, argument, cwd, callback) {
     this.tests = tests
     const testname = Array.isArray(tests) ? tests.join(':') : tests
     let arg = [`--gtest_filter=${testname}`]
     if (Array.isArray(argument))
       arg += argument
     ParallelTaskRunner.enqueue((resolve) => {
-      this.proc = child_process.execFile(binary, arg, (error, stdout, stderr) => {
-        this.error = error
-        this.stdout = stdout
-        this.stderr = stderr
-        this.is_complete = true
-        callback(this)
-        resolve()
-      })
+      this.proc = child_process.execFile(binary, arg,
+        {cwd: cwd},
+        (error, stdout, stderr) => {
+          this.error = error
+          this.stdout = stdout
+          this.stderr = stderr
+          this.is_complete = true
+          if (this.proc)
+            callback(this)
+          resolve()
+        })
     })
   }
   kill() {
@@ -58,22 +69,25 @@ class TestListHistory {
     if (this.filter) {
       arg.push(`--gtest_filter=${this.filter}`)
     }
-    child_process.execFile(this.binary, arg, (error, stdout, stderr) => {
-      let tests = new Set()
-      let test_group = ''
-      for (let t of stdout.split('\n')) {
-        t = t.split('#')[0]
-        if(!t.trim()) continue
-        if (t.charAt(0)!=' ') {
-          test_group = t.trim()
-        } else {
-          tests.add(test_group + t.trim())
+    this.proc = child_process.execFile(this.binary, arg,
+      (error, stdout, stderr) => {
+        if (!this.proc)
+          return
+        let tests = new Set()
+        let test_group = ''
+        for (let t of stdout.split('\n')) {
+          t = t.split('#')[0]
+          if(!t.trim()) continue
+          if (t.charAt(0)!=' ') {
+            test_group = t.trim()
+          } else {
+            tests.add(test_group + t.trim())
+          }
         }
-      }
-      tests = Array.from(tests)
-      on_full_test_list(tests)
-      this._save_full_tests(tests)
-    })
+        tests = Array.from(tests)
+        on_full_test_list(tests)
+        this._save_full_tests(tests)
+      })
   }
   _save_full_tests(new_test_list) {
     this._get_all_tests_from_history((tests) => {
@@ -93,10 +107,16 @@ class TestListHistory {
       fs.writeFile(this.tmp_file, JSON.stringify(tests), (err) => {})
     })
   }
-
+  kill() {
+    if (this.proc) {
+      this.proc.kill()
+      this.proc = undefined
+    }
+  }
 }
 
 module.exports = {
+  getSetDifference: getSetDifference,
   TestListHistory: TestListHistory,
   TestTask: TestTask,
 }
