@@ -6,12 +6,11 @@ const utils = require('./utils')
 const ParallelTaskRunner = require('./ParallelTaskRunner')
 
 class TaskRunner extends EventEmitter {
-  constructor(binary, gtest_filter, args, cwd) {
+  constructor(binary, gtest_filter, options) {
     super()
     this.binary = binary
     this.gtest_filter = gtest_filter
-    this.args = args
-    this.cwd = cwd
+    this.options = options
     this.test_list = []
     this.tasks = {}
     this.pending_completed_tasks = []
@@ -69,7 +68,7 @@ class TaskRunner extends EventEmitter {
     }
   }
   start_test_task(tests) {
-    this.tasks[tests] = new utils.TestTask(this.binary, tests, this.args, this.cwd, (task) => {
+    this.tasks[tests] = new utils.TestTask(this.binary, tests, this.options, (task) => {
       if (this.is_killed)
         return
       if (task.error && Array.isArray(task.tests) && task.tests.length > 1) {
@@ -114,8 +113,7 @@ class TaskRunner extends EventEmitter {
 }
 
 module.exports = {
-  runGtests: (binary, gtest_filter, args, cwd) => {
-    console.log('here')
-    return new TaskRunner(binary, gtest_filter, args, cwd)
+  runGtests: (binary, gtest_filter, options) => {
+    return new TaskRunner(binary, gtest_filter, options)
   }
 }

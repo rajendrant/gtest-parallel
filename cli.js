@@ -23,7 +23,7 @@ parse_command_line = () => {
 }
 
 cli = parse_command_line()
-gtest = runner.runGtests(cli.binary, cli.gtest_filter, cli.additional_args, process.cwd())
+gtest = runner.runGtests(cli.binary, cli.gtest_filter, {additional_args: cli.additional_args}, process.cwd())
 gtest.on('testlist', testlist => {
   console.log('testlist', testlist)
 })

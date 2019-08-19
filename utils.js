@@ -13,15 +13,26 @@ getSetDifference = (old, neww) => {
 }
 
 class TestTask {
-  constructor(binary, tests, argument, cwd, callback) {
+  constructor(binary, tests, options, callback) {
     this.tests = tests
     const testname = Array.isArray(tests) ? tests.join(':') : tests
     let arg = [`--gtest_filter=${testname}`]
-    if (Array.isArray(argument))
-      arg += argument
+    let env = {}
+    Object.assign(env, process.env)
+    let opt = {env}
+    if (options) {
+      if (options.cwd)
+        opt.cwd = options.cwd
+      if (Array.isArray(options.additional_args))
+        arg += options.additional_args
+      if (options.env_home)
+        opt.env.HOME = options.env_home
+      if (options.env_display)
+        opt.env.DISPLAY = options.env_display
+    }
     ParallelTaskRunner.enqueue((resolve) => {
       this.proc = child_process.execFile(binary, arg,
-        {cwd: cwd},
+        opt,
         (error, stdout, stderr) => {
           this.error = error
           this.stdout = stdout
